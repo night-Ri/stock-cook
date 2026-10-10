@@ -1,0 +1,8 @@
+body {
+  margin: 0;
+  background: #f3f0ea;
+  display: flex;
+  justify-content: center;
+  padding: 24px 12px;
+  box-sizing: border-box;
+}
