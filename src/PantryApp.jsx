@@ -226,9 +226,11 @@ export default function PantryApp() {
     setRecipes(nextRecipes);
     persistRecipes(nextRecipes);
 
+    // 「ある」→食材に追加、「ない」→食材から外す（食材は全料理で共通）
     const additions = ings.filter((i) => i.has && !pantrySet.has(i.name)).map((i) => i.name);
-    if (additions.length > 0) {
-      const nextPantry = [...pantry, ...additions];
+    const removals = new Set(ings.filter((i) => !i.has && pantrySet.has(i.name)).map((i) => i.name));
+    if (additions.length > 0 || removals.size > 0) {
+      const nextPantry = [...pantry.filter((p) => !removals.has(p)), ...additions];
       setPantry(nextPantry);
       persistPantry(nextPantry);
     }
@@ -454,7 +456,26 @@ export default function PantryApp() {
         {tab === "pantry" ? (
           <div>
             {/* 追加フォーム */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+              <input
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addItem(newItem)}
+                placeholder="食材名を入力（例：玉ねぎ）"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  minWidth: 0,
+                  padding: "9px 12px",
+                  borderRadius: 9,
+                  border: `1px solid ${cardAlt}`,
+                  background: "#fff",
+                  fontSize: 16,
+                  color: ink,
+                  outline: "none",
+                }}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => setShowQuickAddModal(true)}
                 style={{
@@ -468,29 +489,12 @@ export default function PantryApp() {
                   color: muted,
                   fontSize: 13.5,
                   cursor: "pointer",
-                  flexShrink: 0,
+                  flex: "0 0 auto",
                   whiteSpace: "nowrap",
                 }}
               >
                 候補から追加
               </button>
-              <input
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addItem(newItem)}
-                placeholder="食材名を入力（例：玉ねぎ）"
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "9px 12px",
-                  borderRadius: 9,
-                  border: `1px solid ${cardAlt}`,
-                  background: "#fff",
-                  fontSize: 16,
-                  color: ink,
-                  outline: "none",
-                }}
-              />
               <button
                 onClick={() => addItem(newItem)}
                 style={{
@@ -505,11 +509,13 @@ export default function PantryApp() {
                   fontSize: 13.5,
                   fontWeight: 500,
                   cursor: "pointer",
-                  flexShrink: 0,
+                  flex: 1,
+                  justifyContent: "center",
                 }}
               >
                 <Plus size={15} /> 追加
               </button>
+              </div>
             </div>
 
             {/* 現在の食材一覧 */}
@@ -989,7 +995,8 @@ export default function PantryApp() {
                     boxShadow: "0 4px 14px rgba(155,127,212,0.15)",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                     <h3
                       style={{
                         fontFamily: "'Hachi Maru Pop', sans-serif",
@@ -997,10 +1004,14 @@ export default function PantryApp() {
                         fontSize: 17.5,
                         margin: 0,
                         color: ink,
+                        wordBreak: "keep-all",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {r.name}
                     </h3>
+                    {(r.servings || r.expiry) && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
                     {r.servings && (
                       <span
                         style={{
@@ -1033,11 +1044,15 @@ export default function PantryApp() {
                         {r.expiry}
                       </span>
                     )}
+                    </div>
+                    )}
+                    </div>
                     <button
                       onClick={() => openEditRecipe(r)}
                       aria-label="この料理を編集"
                       style={{
-                        marginLeft: "auto",
+                        flexShrink: 0,
+                        padding: "6px 2px",
                         border: "none",
                         background: "none",
                         color: muted,
@@ -1061,6 +1076,8 @@ export default function PantryApp() {
                         fontSize: 12,
                         fontWeight: 500,
                         cursor: "pointer",
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       <Check size={13} /> 食べた
